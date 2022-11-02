@@ -3,7 +3,7 @@ package routes
 import (
 	"github.com/gin-gonic/gin"
 
-	controllers "AM-UNGoS/controllers"
+	controllers "AMUNGOS/controllers"
 )
 
 func PublicRoutes(g *gin.RouterGroup) {
@@ -25,7 +25,6 @@ func PrivateRoutes(g *gin.RouterGroup) {
 
 	g.POST("/api/update/color", controllers.UpdateColorPostHandler())
 	g.POST("/api/update/password", controllers.UpdatePasswordPostHandler())
-	g.POST("/api/update/service-details", controllers.UpdateServiceDetailsPostHandler())
 	g.POST("/dashboard/credentials", controllers.CredentialsPostHandler())
 	g.POST("/dashboard/credentials/delete", controllers.DeleteCredentialPostHandler())
 	g.POST("/dashboard/boxes/update-codename", controllers.UpdateCodenamePostHandler())

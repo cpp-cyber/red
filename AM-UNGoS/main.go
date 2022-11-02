@@ -12,9 +12,9 @@ import (
 	"log"
 	"errors"
 
-	globals "AM-UNGoS/globals"
-	middleware "AM-UNGoS/middleware"
-	routes "AM-UNGoS/routes"
+	globals "AMUNGOS/globals"
+	middleware "AMUNGOS/middleware"
+	routes "AMUNGOS/routes"
 )
 
 func main() {
@@ -55,8 +55,8 @@ func create_database() {
 	PRAGMA foreign_keys = ON;
 	CREATE TABLE users (user_id INTEGER PRIMARY KEY AUTOINCREMENT, username VARCHAR(64) NOT NULL, password VARCHAR(64) NOT NULL, color VARCHAR(7) DEFAULT "#777777");
 	INSERT INTO users (user_id, username, password) VALUES (0, "No Assignee", "");
-	CREATE TABLE boxes (ip VARCHAR(64) PRIMARY KEY, hostname VARCHAR(64) NULL, codename VARCHAR(64) NULL, assignee INTEGER DEFAULT 0, usershells INTEGER DEFAULT 0, rootshells INTEGER DEFAULT 0, FOREIGN KEY (assignee) REFERENCES users(user_id));
-	CREATE TABLE ports (port_id INTEGER PRIMARY KEY AUTOINCREMENT, port_number INTEGER NOT NULL, protocol VARCHAR(64) NOT NULL, service_name VARCHAR(64) NULL, service_details VARCHAR(8192), box_ip VARCHAR(64) NOT NULL, FOREIGN KEY (box_ip) REFERENCES boxes(ip));
+	CREATE TABLE boxes (ip VARCHAR(64) PRIMARY KEY, hostname VARCHAR(64) NULL, nmapresults VARCHAR(2048) NULL, codename VARCHAR(64) NULL, assignee INTEGER DEFAULT 0, usershells INTEGER DEFAULT 0, rootshells INTEGER DEFAULT 0, FOREIGN KEY (assignee) REFERENCES users(user_id));
+	CREATE TABLE ports (port_id INTEGER PRIMARY KEY AUTOINCREMENT, port_number INTEGER NOT NULL, protocol VARCHAR(64) NOT NULL,  service_name VARCHAR(64) NULL, box_ip VARCHAR(64) NOT NULL, FOREIGN KEY (box_ip) REFERENCES boxes(ip));
 	CREATE TABLE credentials (credential_id INTEGER PRIMARY KEY AUTOINCREMENT, ip VARCHAR(64) NULL, hostname VARCHAR(64) NULL, port INTEGER NOT NULL, service VARCHAR(64) NOT NULL, username VARCHAR(64) NOT NULL, password VARCHAR(64) NOT NULL);
 	`
 	_, err = db.Exec(stmt)
