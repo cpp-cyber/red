@@ -163,7 +163,9 @@ namespace Jit_Tripping
             Console.WriteLine("Managed method address:   0x{0:X}", (long)pMethod);
             if (Marshal.ReadByte(pMethod) != 0xe9)
             {
+#if debug
                 Console.WriteLine("Invalid stub, gonna assume the managed method address is the method table entry");
+#endif
                 this.codeCove = pMethod;
                 return;
             }
@@ -173,7 +175,9 @@ namespace Jit_Tripping
             addr64 = (UInt64)pMethod + (UInt64)offset;
             while (addr64 % 16 != 0)
                 addr64++;
+#if debug
             Console.WriteLine($"Unmanaged method address: 0x{addr64:x16}\n");
+#endif
             this.codeCove = (IntPtr)addr64;
         }
 
@@ -228,7 +232,9 @@ namespace Jit_Tripping
 	            0x49, 0xBB, bruh[0], bruh[1], bruh[2], bruh[3], bruh[4], bruh[5], bruh[6], bruh[7],     // movabs r11,syscall address
 	            0x41, 0xFF, 0xE3 				       	                                                // jmp r11
             };
+#if debug
             Console.WriteLine("{0} is located at: 0x{1:X} to 0x{2:X}", name, (long)this.codeCove, (long)this.codeCove + newSyscallStub.Length);
+#endif
             byte[] originalBytes = new byte[newSyscallStub.Length];
             for (int i = 0; i < originalBytes.Length; i++)
             {
@@ -264,7 +270,9 @@ namespace Jit_Tripping
                 currentDictionaryIndex++;
                 if (syscallInstructAddr == IntPtr.Zero)
                 {
+#if debug
                     Console.WriteLine("{0}'s syscall instruction could not be located!", item.Value.funcName);
+#endif
                     continue;
                 }
                 else
