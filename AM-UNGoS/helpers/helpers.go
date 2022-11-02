@@ -34,19 +34,25 @@ type DBPort struct {
 	Port		int
 	Protocol	string
 	Service		string
+	Details		string
 	IP		string
 }
 
 type Box struct {
 	IP		string
 	Hostname	string
-	Ports		[]string
-	NMAPResults	string
+	Ports		[]PortDetail
 	Codename	string
 	Assignee	int
 	Color		string
 	UserShells	int
 	RootShells	int
+}
+
+type PortDetail struct {
+	ID		int
+	Title		string
+	Details		string
 }
 
 type Hosts struct {
@@ -64,6 +70,9 @@ type Host struct {
 type Service struct {
 	XMLName		xml.Name	`xml:"service"`
 	Name		string		`xml:"name,attr"`
+	Version		string		`xml:"version,attr"`
+	Product		string		`xml:"product,attr"`
+	ExtraInfo	string		`xml:"extrainfo,attr"`
 }
 
 type Port struct {
@@ -248,6 +257,26 @@ func UpdateCodename (codename, ip string) bool {
 	return true
 }
 
+func UpdateServiceDetails (details string, id int) bool {
+	db, err := sql.Open("sqlite3", "database.db")
+	if err != nil {
+		return false
+	}
+	defer db.Close()
+	stmt, err := db.Prepare("UPDATE ports SET service_details = ? WHERE port_id = ?")
+	if err != nil {
+		return false
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(details, id)
+	
+	if err != nil {
+		return false
+	}
+	defer stmt.Close()
+	return true
+}
+
 func GetUsernames () ([]string, error) {
 	db, err := sql.Open("sqlite3", "database.db")
 	if err != nil {
@@ -360,11 +389,11 @@ func GetBoxes () ([]Box, error) {
 
 	for rows.Next() {
 		var box Box
-		if err := rows.Scan(&box.IP, &box.Hostname, &box.NMAPResults, &box.Codename, &box.Assignee, &box.UserShells, &box.RootShells); err != nil {
+		if err := rows.Scan(&box.IP, &box.Hostname, &box.Codename, &box.Assignee, &box.UserShells, &box.RootShells); err != nil {
 			log.Println(err)
 			return boxes, err
 		}
-		var ports []string
+		var ports []PortDetail
 		dbports, err := db.Query("SELECT * FROM ports WHERE box_ip = ?", box.IP)
 		if err != nil {
 			return nil, err
@@ -372,10 +401,10 @@ func GetBoxes () ([]Box, error) {
 		defer rows.Close()
 		for dbports.Next() {
 			var dbport DBPort
-			if err := dbports.Scan(&dbport.ID, &dbport.Port, &dbport.Protocol, &dbport.Service, &dbport.IP); err != nil {
+			if err := dbports.Scan(&dbport.ID, &dbport.Port, &dbport.Protocol, &dbport.Service, &dbport.Details, &dbport.IP); err != nil {
 				return nil, err
 			}
-			ports = append(ports, fmt.Sprintf("Port %d/%s %s", dbport.Port, dbport.Protocol, dbport.Service))
+			ports = append(ports, PortDetail{dbport.ID, fmt.Sprintf("Port %d/%s %s", dbport.Port, dbport.Protocol, dbport.Service), dbport.Details})
 		}
 		if err = dbports.Err(); err != nil {
 			return boxes, err
@@ -419,7 +448,6 @@ func UploadFile (file *multipart.FileHeader) bool {
 			// skip router
 			var ip string
 			var hostname string
-			var nmapresults string
 			var codename string
 			ip = addr.Addr
 			if len(host.Hostnames) > 0 {
@@ -445,27 +473,27 @@ func UploadFile (file *multipart.FileHeader) bool {
 			defer stmt.Close()
 			// create box entry
 			if existingbox > 0 {
-				stmt, err := db.Prepare("UPDATE boxes SET hostname = ?, nmapresults = ? WHERE ip = ?")
+				stmt, err := db.Prepare("UPDATE boxes SET hostname = ? WHERE ip = ?")
 
 				if err != nil {
 					return false
 				}
 				defer stmt.Close()
 
-				_, err = stmt.Exec(hostname, nmapresults, ip)
+				_, err = stmt.Exec(hostname, ip)
 				if err != nil {
 					return false
 				}
 				defer stmt.Close()
 			} else {
-				stmt, err := db.Prepare("INSERT INTO boxes (ip, hostname, nmapresults, codename) VALUES (?, ?, ?, ?)")
+				stmt, err := db.Prepare("INSERT INTO boxes (ip, hostname, codename) VALUES (?, ?, ?)")
 
 				if err != nil {
 					return false
 				}
 				defer stmt.Close()
 
-				_, err = stmt.Exec(ip, hostname, nmapresults, codename)
+				_, err = stmt.Exec(ip, hostname, codename)
 				if err != nil {
 					return false
 				}
@@ -474,36 +502,63 @@ func UploadFile (file *multipart.FileHeader) bool {
 			// create port entries
 			if len(host.Ports) > 0 {
 				var skip bool
+				var update bool
 				for _, port := range host.Ports {
 					skip = false
+					update = false
 					rows, err := db.Query("SELECT * FROM ports WHERE box_ip = ?", ip)
 					if err != nil {
 						return false
 					}
 					defer rows.Close()
+					details := ""
+					if port.Service.Product != "" {
+						details += fmt.Sprintf("Product: %s\n", port.Service.Product)
+					}
+					if port.Service.Version != "" {
+						details += fmt.Sprintf("Version: %s\n", port.Service.Version)
+					}
+					if port.Service.ExtraInfo != "" {
+						details += fmt.Sprintf("Extra Info: %s\n", port.Service.ExtraInfo)
+					}
 					for rows.Next() {
 						var dbport DBPort
-						if err := rows.Scan(&dbport.ID, &dbport.Port, &dbport.Protocol, &dbport.Service, &dbport.IP); err != nil {
+						if err := rows.Scan(&dbport.ID, &dbport.Port, &dbport.Protocol, &dbport.Service, &dbport.Details, &dbport.IP); err != nil {
 							return false
 						}
 						if port.Port == dbport.Port && port.Protocol == dbport.Protocol {
-							skip = true
+							update = true
+							if dbport.Details == details {
+								skip = true
+							}
 						} 
 					}
 					if skip == true {
 						continue
 					}
-					stmt, err := db.Prepare("INSERT INTO ports (port_number, protocol, service_name, box_ip) VALUES (?, ?, ?, ?)")
-					if err != nil {
-						return false
+					if update == true {
+						stmt, err := db.Prepare("UPDATE ports SET service_details = ? WHERE box_ip = ?")
+						if err != nil {
+							return false
+						}
+						defer stmt.Close()
+						_, err = stmt.Exec(details, ip)
+						if err != nil {
+							return false
+						}
+						defer stmt.Close()
+					} else {
+						stmt, err := db.Prepare("INSERT INTO ports (port_number, protocol, service_name, service_details, box_ip) VALUES (?, ?, ?, ?, ?)")
+						if err != nil {
+							return false
+						}
+						defer stmt.Close()
+						_, err = stmt.Exec(port.Port, port.Protocol, port.Service.Name, details, ip)
+						if err != nil {
+							return false
+						}
+						defer stmt.Close()
 					}
-					defer stmt.Close()
-
-					_, err = stmt.Exec(port.Port, port.Protocol, port.Service.Name, ip)
-					if err != nil {
-						return false
-					}
-					defer stmt.Close()
 				}
 			}
 			db.Close()

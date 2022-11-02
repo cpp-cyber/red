@@ -10,8 +10,8 @@ import (
 	"strconv"
 	//"io/ioutil"
 
-	globals "AMUNGOS/globals"
-	helpers "AMUNGOS/helpers"
+	globals "AM-UNGoS/globals"
+	helpers "AM-UNGoS/helpers"
 )
 
 type UploadForm struct {
@@ -202,6 +202,19 @@ func UpdateCodenamePostHandler() gin.HandlerFunc {
 		
 		if !helpers.UpdateCodename(codename, ip) {
 			c.HTML(http.StatusInternalServerError, "boxes.html", gin.H{"error": "Failed to update codename"})
+			return
+		} 
+		c.Redirect(http.StatusMovedPermanently, "/dashboard/boxes")
+	}
+}
+
+func UpdateServiceDetailsPostHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		details := c.PostForm("content")
+		id, _ := strconv.Atoi(c.PostForm("id"))
+		
+		if !helpers.UpdateServiceDetails(details, id) {
+			c.HTML(http.StatusInternalServerError, "boxes.html", gin.H{"error": "Failed to update service details"})
 			return
 		} 
 		c.Redirect(http.StatusMovedPermanently, "/dashboard/boxes")
