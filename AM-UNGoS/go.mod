@@ -1,4 +1,4 @@
-module AMUNGOS
+module AM-UNGoS
 
 go 1.18
 
