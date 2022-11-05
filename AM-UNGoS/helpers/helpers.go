@@ -471,36 +471,37 @@ func UploadFile (file *multipart.FileHeader) bool {
 				return false
 			}
 			defer stmt.Close()
-			// create box entry
-			if existingbox > 0 {
-				stmt, err := db.Prepare("UPDATE boxes SET hostname = ? WHERE ip = ?")
-
-				if err != nil {
-					return false
-				}
-				defer stmt.Close()
-
-				_, err = stmt.Exec(hostname, ip)
-				if err != nil {
-					return false
-				}
-				defer stmt.Close()
-			} else {
-				stmt, err := db.Prepare("INSERT INTO boxes (ip, hostname, codename) VALUES (?, ?, ?)")
-
-				if err != nil {
-					return false
-				}
-				defer stmt.Close()
-
-				_, err = stmt.Exec(ip, hostname, codename)
-				if err != nil {
-					return false
-				}
-				defer stmt.Close()
-			}
+			
 			// create port entries
 			if len(host.Ports) > 0 {
+				// create box entry
+				if existingbox > 0 {
+					stmt, err := db.Prepare("UPDATE boxes SET hostname = ? WHERE ip = ?")
+
+					if err != nil {
+						return false
+					}
+					defer stmt.Close()
+
+					_, err = stmt.Exec(hostname, ip)
+					if err != nil {
+						return false
+					}
+					defer stmt.Close()
+				} else {
+					stmt, err := db.Prepare("INSERT INTO boxes (ip, hostname, codename) VALUES (?, ?, ?)")
+
+					if err != nil {
+						return false
+					}
+					defer stmt.Close()
+
+					_, err = stmt.Exec(ip, hostname, codename)
+					if err != nil {
+						return false
+					}
+					defer stmt.Close()
+				}
 				var skip bool
 				var update bool
 				for _, port := range host.Ports {
