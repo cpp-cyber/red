@@ -18,7 +18,7 @@
             <div class="box">
               <div>
                 <h1 class="title">Network PWNge</h1>
-		<progress class="progress is-success is-large" value="{{.content.PwnedBoxes}}" max="{{.content.TotalBoxes}}"></progress>
+		<progress name="main-progress" class="progress is-success is-large" value="{{.content.PwnedBoxes}}" max="{{.content.TotalBoxes}}"></progress>
 		<p class="subtitle is-5">{{.content.PwnedBoxes}}/{{.content.TotalBoxes}} boxes have at least 1 shell open</p>
               </div>
             </div>
@@ -41,4 +41,15 @@
     </div>
   </div>
 </section>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+<script>
+	$(document).ready(function () {
+		$progress = $("[name='main-progress']");
+		if ($progress.attr("value") == $progress.attr("max")) {
+			confetti({
+					spread: 180
+				});
+		}
+	});
+</script>
 {{template "footer.html"}}
