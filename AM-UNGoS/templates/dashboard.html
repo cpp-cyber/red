@@ -45,7 +45,7 @@
 <script>
 	$(document).ready(function () {
 		$progress = $("[name='main-progress']");
-		if ($progress.attr("value") == $progress.attr("max")) {
+		if ($progress.attr("value") == $progress.attr("max") && $progress.attr("max") != 0) {
 			confetti({
 					spread: 180
 				});
